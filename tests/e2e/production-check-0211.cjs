@@ -1,14 +1,14 @@
 // Production reads only. --preview-assets substitutes local web assets and
 // synthetic backup metadata in the browser before deployment. No business POSTs.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const preview=process.argv.includes('--preview-assets');
-const base='${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}';
+const base=(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440');
 const screenshots=path.resolve(__dirname,'../../docs/assets/subhub');
 const prefix=preview?'0211-preview':'0211-production';
 (async()=>{
  const {session}=JSON.parse(fs.readFileSync(0,'utf8'));
- const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+ const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
  let phase='start';
  try{
   const ctx=await browser.newContext({viewport:{width:390,height:900},reducedMotion:'reduce'});

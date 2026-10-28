@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict');
 const path=require('node:path');
 const screenshots=path.resolve(__dirname,'../../docs/assets/subhub');
@@ -8,7 +8,7 @@ const screenshots=path.resolve(__dirname,'../../docs/assets/subhub');
   const portalToken=process.env.SUBHUB_PORTAL_TOKEN;
   const adminPassword=process.env.SUBHUB_TEST_ADMIN_PASSWORD;
   if(!portalToken||!adminPassword)throw new Error('SUBHUB_PORTAL_TOKEN and SUBHUB_TEST_ADMIN_PASSWORD are required');
-  const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+  const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
   try{
     const ctx=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
     const page=await ctx.newPage();

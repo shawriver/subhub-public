@@ -1,12 +1,12 @@
 // Use an ephemeral session supplied on stdin. Edit only unsaved UI drafts;
 // no real members, assignments, node records or subscriptions are mutated.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const fs=require('node:fs'),assert=require('node:assert/strict');
-const executable='C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const executable=process.env.SUBHUB_CHROMIUM;
 (async()=>{
- let browser,phase='setup';const {session}=JSON.parse(fs.readFileSync(0,'utf8')),base='${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}';
+ let browser,phase='setup';const {session}=JSON.parse(fs.readFileSync(0,'utf8')),base=(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440');
  try{
-  browser=await chromium.launch({headless:true,executablePath:executable});const ctx=await browser.newContext({viewport:{width:1440,height:940}});
+  browser=await chromium.launch({headless:true,...(executable ? {executablePath:executable} : {})});const ctx=await browser.newContext({viewport:{width:1440,height:940}});
   await ctx.addCookies([{name:'subhub_session',value:session,url:base,httpOnly:true,secure:true,sameSite:'Lax'}]);
   const page=await ctx.newPage(),errors=[];let writes=0;page.on('pageerror',e=>errors.push(e.name));page.on('request',r=>{if(r.url().includes('/api/admin/')&&!['GET','HEAD'].includes(r.method()))writes++});
   page.setDefaultTimeout(15000);await page.goto(base+'/admin/members',{waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();

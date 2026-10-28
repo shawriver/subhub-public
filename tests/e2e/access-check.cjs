@@ -1,9 +1,9 @@
 // Isolated synthetic-account acceptance. All credentials/cookies stay in memory.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto'),net=require('node:net');
 const {spawn,execFileSync}=require('node:child_process');
-const executable='C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const executable=process.env.SUBHUB_CHROMIUM;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const port=()=>new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p))})});
 (async()=>{
@@ -17,7 +17,7 @@ const port=()=>new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1'
   app=spawn(binary,args,{stdio:'ignore',windowsHide:true});
   for(let i=0;i<50;i++){try{if((await fetch(base+'/api/status')).ok)break}catch{}await sleep(100)}
   const init=await fetch(base+'/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:setup,username:'admin',password})});assert.equal(init.status,200);
-  browser=await chromium.launch({headless:true,executablePath:executable});
+  browser=await chromium.launch({headless:true,...(executable ? {executablePath:executable} : {})});
   let ctx=await browser.newContext({viewport:{width:1440,height:1000}}),page=await ctx.newPage();const errors=[];page.on('pageerror',()=>errors.push('pageerror'));
   phase='public-entry';await page.goto(base,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'服务器状态',exact:true}).waitFor();assert.equal(await page.locator('.sidebar').count(),0);assert.equal((await ctx.request.get(base+'/api/admin/overview')).status(),401);
   phase='login-page';await page.goto(base+'/admin/nodes',{waitUntil:'networkidle'});await page.getByRole('heading',{name:'登录管理后台'}).waitFor();assert.equal(new URL(page.url()).pathname,'/login');assert.equal(new URL(page.url()).searchParams.get('next'),'/admin/nodes');assert.equal(await page.locator('.modal').count(),0);assert.ok(await page.locator('input[name=remember]').isChecked());
@@ -35,7 +35,7 @@ const port=()=>new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1'
   await page.screenshot({path:'docs/assets/subhub/025-public-local.png',fullPage:true});await page.unroute('**/api/public/status');await page.goto(base+'/admin',{waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();assert.equal(await page.locator('.workspace-label > svg').count(),0);
   phase='header-does-not-logout';await page.getByRole('button',{name:'管理后台',exact:true}).click();await page.getByRole('heading',{name:'服务器状态',exact:true}).waitFor();assert.equal((await ctx.request.get(base+'/api/session')).status(),200);assert.ok((await(await ctx.request.get(base+'/api/session')).json()).authenticated);await page.locator('.access-header').getByRole('link',{name:'管理后台',exact:true}).click();await page.locator('.sidebar').waitFor();
   phase='refresh-restores';await page.reload({waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();
-  phase='browser-reopen';cookies=(await ctx.cookies()).filter(c=>c.expires>Date.now()/1000);await browser.close();browser=await chromium.launch({headless:true,executablePath:executable});ctx=await browser.newContext({viewport:{width:1440,height:1000}});await ctx.addCookies(cookies);page=await ctx.newPage();page.on('pageerror',()=>errors.push('pageerror'));await page.goto(base+'/admin',{waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();
+  phase='browser-reopen';cookies=(await ctx.cookies()).filter(c=>c.expires>Date.now()/1000);await browser.close();browser=await chromium.launch({headless:true,...(executable ? {executablePath:executable} : {})});ctx=await browser.newContext({viewport:{width:1440,height:1000}});await ctx.addCookies(cookies);page=await ctx.newPage();page.on('pageerror',()=>errors.push('pageerror'));await page.goto(base+'/admin',{waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();
   phase='app-restart';app.kill();await new Promise(r=>app.once('exit',r));app=spawn(binary,args,{stdio:'ignore',windowsHide:true});for(let i=0;i<50;i++){try{if((await fetch(base+'/api/status')).ok)break}catch{}await sleep(100)}await page.reload({waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();
   phase='temporary-network-error';await page.route('**/api/session',r=>r.fulfill({status:503,contentType:'application/json',body:'{"error":"temporary failure"}'}));await page.reload({waitUntil:'networkidle'});await page.getByRole('heading',{name:'暂时无法打开后台'}).waitFor();assert.ok((await ctx.cookies()).some(c=>c.name==='subhub_session'));assert.equal(await page.locator('.notice-demo').count(),0);await page.unroute('**/api/session');await page.getByRole('button',{name:'重新连接',exact:true}).click();await page.locator('.sidebar').waitFor();
   phase='demo-removed';assert.equal((await page.goto(base+'/demo',{waitUntil:'networkidle'})).status(),404);assert.ok((await(await ctx.request.get(base+'/api/session')).json()).authenticated);await page.goto(base+'/admin',{waitUntil:'networkidle'});await page.locator('.sidebar').waitFor();

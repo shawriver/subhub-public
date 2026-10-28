@@ -1,8 +1,8 @@
 // Synthetic, isolated acceptance of subscription-first setup and expiry controls.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto'),net=require('node:net');
 const {spawn,execFileSync}=require('node:child_process');
-const executable='C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const executable=process.env.SUBHUB_CHROMIUM;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const freePort=()=>new Promise(resolve=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p))})});
 (async()=>{
@@ -14,7 +14,7 @@ const freePort=()=>new Promise(resolve=>{const s=net.createServer();s.listen(0,'
   app=spawn(binary,args,{stdio:'ignore',windowsHide:true});
   for(let i=0;i<60;i++){try{if((await fetch(base+'/api/status')).ok)break}catch{}await sleep(100)}
   assert.equal((await fetch(base+'/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:setup,username:'admin',password})})).status,200);
-  browser=await chromium.launch({headless:true,executablePath:executable});
+  browser=await chromium.launch({headless:true,...(executable ? {executablePath:executable} : {})});
   const ctx=await browser.newContext({viewport:{width:1440,height:1000}}),page=await ctx.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.name));page.setDefaultTimeout(12000);
   await page.goto(base+'/admin/subscriptions');await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:'登录',exact:true}).click();await page.locator('.sidebar').waitFor();

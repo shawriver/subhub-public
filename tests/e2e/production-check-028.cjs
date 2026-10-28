@@ -1,6 +1,6 @@
 // Read-only production acceptance. Session arrives on stdin and is revoked by
 // scripts/lib/subhub-production-028.py after this process exits.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -8,8 +8,8 @@ const screenshots=path.resolve(__dirname,'../../docs/assets/subhub');
 
 (async()=>{
   const {session}=JSON.parse(fs.readFileSync(0,'utf8'));
-  const base='${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}';
-  const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+  const base=(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440');
+  const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
   try{
     const anonymous=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
     const publicPage=await anonymous.newPage();const publicErrors=[];publicPage.on('pageerror',()=>publicErrors.push('pageerror'));

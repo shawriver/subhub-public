@@ -440,7 +440,7 @@ export default function TasksPage({ data, search, onRefresh }) {
                       onClick={() => toggleObserve(!sync.observeMode)}><span /></button>
                   </div>
                   <div className="tk-sync-foot">
-                    <span><Clock3 size={13} />{sync.lastRoundAt ? timeText(sync.lastRoundAt) : "尚无同步轮次"}</span>
+                    <span><Clock3 size={13} />{timeText(sync.lastRoundAt)}</span>
                     <div className="tk-chips">
                       {roundEntries.length > 0
                         ? roundEntries.map(([k, v]) => <span key={k} className="tk-chip">{ROUND_LABELS[k] || k} {v}</span>)
@@ -547,15 +547,15 @@ export default function TasksPage({ data, search, onRefresh }) {
                       </div></td>
                       <td><span className="muted">{KIND_LABELS[t.kind] || t.kind || "—"}</span></td>
                       <td><TaskStatus status={t.status} /></td>
-                      <td><div className="tk-detail">
+                      <td data-label="详情"><div className="tk-detail">
                         <span className={isOpen ? "" : "tk-clamp"}>{detail || "—"}</span>
                         {long && <button type="button" className="tk-link" onClick={() => toggleExpanded(t.id)}>{isOpen ? "收起" : "展开"}</button>}
                       </div></td>
-                      <td>{t.serverId
+                      <td data-label="关联服务器">{t.serverId
                         ? <span>{serverNames.get(t.serverId) || "未知服务器"}</span>
                         : <span className="muted">—</span>}</td>
-                      <td><span className="tk-time">{timeText(t.created)}</span></td>
-                      <td><button type="button" className="btn btn-small" aria-label={`删除任务 ${t.name || t.id}`}
+                      <td data-label="创建时间"><span className="tk-time">{timeText(t.created)}</span></td>
+                      <td className="tk-row-actions"><button type="button" className="btn btn-small" aria-label={`删除任务 ${t.name || t.id}`}
                         onClick={() => { setDelTarget(t); setDelErr(""); }}>
                         <Trash2 size={13} />删除</button></td>
                     </tr>

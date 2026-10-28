@@ -1,10 +1,10 @@
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 (async()=>{
   const password=process.env.SUBHUB_TEST_PASSWORD;
   const token=process.env.SUBHUB_SETUP_TOKEN;
   const baseURL=process.env.SUBHUB_BASE_URL||'http://127.0.0.1:18441';
   if(!password||!token)throw new Error('test secrets missing');
-  const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+  const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
   const context=await browser.newContext({viewport:{width:1440,height:1000},permissions:['clipboard-read','clipboard-write']});
   const page=await context.newPage();
   const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('status of 404 (Not Found)'))errors.push(m.text())});

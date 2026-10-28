@@ -1,11 +1,11 @@
 // Production acceptance. Session arrives via stdin; no private response or URL is written.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
-const executable='C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const executable=process.env.SUBHUB_CHROMIUM;
 (async()=>{
- let browser,phase='init';const input=JSON.parse(fs.readFileSync(0,'utf8'));const base='${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}';
+ let browser,phase='init';const input=JSON.parse(fs.readFileSync(0,'utf8'));const base=(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440');
  try{
-  browser=await chromium.launch({headless:true,executablePath:executable});
+  browser=await chromium.launch({headless:true,...(executable ? {executablePath:executable} : {})});
   const anon=await browser.newContext({viewport:{width:1440,height:1080}});const page=await anon.newPage();const errors=[];
   page.on('pageerror',()=>errors.push('pageerror'));const samples=[];
   page.on('response',async r=>{if(new URL(r.url()).pathname==='/api/public/status'&&r.ok()){try{samples.push(await r.json())}catch{}}});

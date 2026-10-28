@@ -1,9 +1,9 @@
 // Browser acceptance against disposable VPS fixture. Secrets only in stdin/memory.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 (async()=>{
  const {session}=JSON.parse(fs.readFileSync(0,'utf8')),base='http://127.0.0.1:18441';
- const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+ const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
  let phase='connect';try{
   const ctx=await browser.newContext({viewport:{width:390,height:900},reducedMotion:'reduce'});await ctx.addCookies([{name:'subhub_session',value:session,url:base,httpOnly:true,sameSite:'Lax'}]);
   for(let i=0;i<30;i++){try{if((await ctx.request.get(base+'/api/status')).ok())break}catch{}await new Promise(r=>setTimeout(r,200))}

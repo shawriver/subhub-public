@@ -1,7 +1,7 @@
 // Disposable public-wall acceptance. Input: {base,session,output,disposable:true,
 // previewAssets?:true,wallpaperFile?:path}. Synthetic status payload only; no
 // panel or probe action.
-const {chromium} = require(process.env.SUBHUB_PLAYWRIGHT_MODULE || "C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
+const {chromium} = require(process.env.SUBHUB_PLAYWRIGHT_MODULE || "playwright");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");

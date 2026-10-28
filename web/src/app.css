@@ -1987,7 +1987,39 @@ html:not([data-wallpaper]) .management-page .glass.list-panel { background: var(
   .tasks-page .task-sync-card, .tasks-page .task-backup-card, .tasks-page .tk-audit-section { padding: 18px; }
   .tasks-page .tk-chips { justify-content: flex-start; }
   .tasks-page .tk-backup-actions { grid-template-columns: 1fr; }
-  .tasks-page .tk-table td { padding: 12px; }
+  .tasks-page .tk-table,
+  .tasks-page .tk-audit-table { display: block; min-width: 0; }
+  .tasks-page .tk-table thead,
+  .tasks-page .tk-audit-table thead { display: none; }
+  .tasks-page .tk-table tbody,
+  .tasks-page .tk-audit-table tbody { display: block; }
+  .tasks-page .tk-table tbody tr,
+  .tasks-page .tk-audit-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 12px; border-bottom: 1px solid var(--inner-border); }
+  .tasks-page .tk-table tbody tr:last-child,
+  .tasks-page .tk-audit-table tbody tr:last-child { border-bottom: 0; }
+  .tasks-page .tk-table td,
+  .tasks-page .tk-audit-table td { display: block; padding: 0; border: 0; min-width: 0; }
+  .tasks-page .tk-table td[data-label]::before,
+  .tasks-page .tk-audit-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 3px; font-size: 10px; font-weight: 650; letter-spacing: .04em; color: var(--text-tertiary); }
+  .tasks-page .tk-table td:nth-child(1),
+  .tasks-page .tk-table td:nth-child(2),
+  .tasks-page .tk-table td:nth-child(3),
+  .tasks-page .tk-table td:nth-child(4),
+  .tasks-page .tk-table td:nth-child(5),
+  .tasks-page .tk-table td:nth-child(6),
+  .tasks-page .tk-table td:nth-child(7) { grid-column: 1 / -1; }
+  .tasks-page .tk-table td:nth-child(1) { grid-column: 1; }
+  .tasks-page .tk-table td:nth-child(2) { grid-column: 2; text-align: right; }
+  .tasks-page .tk-table td:nth-child(2)::before,
+  .tasks-page .tk-table td:nth-child(3)::before { display: none; }
+  .tasks-page .tk-table td:nth-child(3) { position: absolute; right: 12px; margin-top: 28px; }
+  .tasks-page .tk-table tbody tr { position: relative; }
+  .tasks-page .tk-row-actions { grid-column: 1 / -1; padding-top: 8px !important; border-top: 1px solid var(--inner-border) !important; }
+  .tasks-page .tk-row-actions .btn { width: 100%; justify-content: center; }
+  .tasks-page .tk-audit-table td:nth-child(1) { grid-column: 1; font-size: 11px; }
+  .tasks-page .tk-audit-table td:nth-child(2) { grid-column: 1 / -1; }
+  .tasks-page .tk-audit-table td:nth-child(3) { grid-column: 1 / -1; overflow-wrap: anywhere; }
+  .tasks-page .tk-audit-table .tk-action { overflow-wrap: normal; word-break: normal; white-space: normal; }
   .tk-section-head { align-items: flex-start; flex-wrap: wrap; }
   .tk-mode-line { gap: 10px; }
   .tk-backup-summary { grid-template-columns: minmax(0, 1fr); }

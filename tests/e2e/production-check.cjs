@@ -1,14 +1,14 @@
 // Read-only production UI acceptance with a short-lived session supplied in memory.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict');
 (async()=>{
- const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+ const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
  try{
   assert.ok(process.env.SUBHUB_ACCEPT_SESSION);
   const ctx=await browser.newContext({viewport:{width:1440,height:1100}});
-  await ctx.addCookies([{name:'subhub_session',value:process.env.SUBHUB_ACCEPT_SESSION,url:'${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}',httpOnly:true,secure:true,sameSite:'Strict'}]);
+  await ctx.addCookies([{name:'subhub_session',value:process.env.SUBHUB_ACCEPT_SESSION,url:(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'),httpOnly:true,secure:true,sameSite:'Strict'}]);
   const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}',{waitUntil:'networkidle'});
+  await page.goto((process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'),{waitUntil:'networkidle'});
   const d=await page.evaluate(async()=>await(await fetch('/api/admin/overview')).json());
   assert.equal(d.servers.length,3);assert.equal(d.nodes.length,6);assert.equal(d.panels.length,3);assert.equal(d.agents.length,3);
   assert.ok(d.panels.every(p=>p.status==='connected'));

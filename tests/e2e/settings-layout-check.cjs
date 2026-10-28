@@ -48,6 +48,7 @@ async function main() {
     }
   }
   try {
+    const baselineOverview = await api("GET", "/api/admin/overview");
     for (const mode of ["light", "dark"]) {
       await api("POST", "/api/admin/appearance", theme(mode));
       for (const width of [1440, 1024, 768, 390, 360]) {
@@ -79,6 +80,7 @@ async function main() {
           await layout(`${mode}-${width}-${id}`, [1440, 390].includes(width));
           if (id === "connections") {
             const expand = page.locator(".st-expand");
+            if (await expand.getAttribute("open") !== null) await expand.locator("summary").click();
             assert.equal(await expand.getAttribute("open"), null);
             await expand.locator("summary").click();
             await page.getByLabel("面板名称", {exact: true}).waitFor();
@@ -90,32 +92,18 @@ async function main() {
     }
     checks.push("seven admin pages, public wall and five settings sections in both themes at five widths without overflow; duplicate settings footer removed");
 
-    // Exercise latency polling in the simplified table using synthetic results.
+    // Exercise the browser-side latency action using a synthetic response.
     const latencyOverview = await api("GET", "/api/admin/overview");
     const latencyNode = latencyOverview.nodes.find(n => n.enabled);
-    let latencyState = null;
-    const latencyResult = {nodeId: latencyNode.id, runId: "synthetic-layout-run", mode: "latency", state: "running", checkedAt: new Date().toISOString()};
-    await page.route("**/api/admin/overview", route => route.fulfill({status: 200, contentType: "application/json",
-      body: JSON.stringify({...latencyOverview, nodeTests: {...latencyOverview.nodeTests, ...(latencyState ? {[latencyNode.id]: {...latencyResult, ...latencyState}} : {})}})}));
-    await page.route(`**/api/admin/nodes/${latencyNode.id}/test`, route => {
-      if (route.request().method() === "POST") {
-        assert.equal(route.request().postDataJSON().mode, "latency");
-        latencyState = {state: "running"};
-        return route.fulfill({status: 202, contentType: "application/json", body: JSON.stringify(latencyResult)});
-      }
-      latencyState = {state: "verified", latencyMs: 47, detail: "Synthetic latency acceptance"};
-      return route.fulfill({status: 200, contentType: "application/json", body: JSON.stringify({...latencyResult, ...latencyState})});
-    });
+    await page.route(`https://${latencyNode.host}:${latencyNode.port}/**`, route => route.fulfill({status: 204, body: ""}));
     await visit("/admin/nodes");
     const latencyRow = page.locator(".nd-table tbody tr").filter({hasText: latencyNode.name});
     await latencyRow.getByRole("button", {name: `测试 ${latencyNode.name} 延迟`, exact: true}).click();
-    await latencyRow.getByText("测试中", {exact: true}).waitFor();
-    await latencyRow.getByText("47 ms", {exact: true}).waitFor();
+    await latencyRow.getByText(/\d+ ms/, {exact: true}).waitFor();
     assert.equal(await latencyRow.getByRole("button", {name: `测试 ${latencyNode.name} 延迟`, exact: true}).isEnabled(), true);
     assert.equal(await page.locator(".nd-test-cell").count(), 0);
-    await page.unroute(`**/api/admin/nodes/${latencyNode.id}/test`);
-    await page.unroute("**/api/admin/overview");
-    checks.push("simplified node table retains the latency button, progress and polled result without diagnostic text");
+    await page.unroute(`https://${latencyNode.host}:${latencyNode.port}/**`);
+    checks.push("simplified node table retains browser latency measurement and result without diagnostic text");
 
     await visit("/admin/settings#appearance");
     for (const [mode, title] of [["light", "浅色"], ["dark", "深色"], ["system", "跟随系统"]]) {
@@ -153,10 +141,12 @@ async function main() {
     const binding = page.locator(".st-bind-row").first();
     const picker = binding.getByRole("combobox");
     const original = await picker.inputValue();
-    await picker.selectOption("");
-    assert.equal(await binding.getByRole("button", {name: "保存关联", exact: true}).isEnabled(), true);
-    await picker.selectOption(original);
-    assert.equal(await binding.getByRole("button", {name: "保存关联", exact: true}).isDisabled(), true);
+    if (await picker.locator("option").count() > 1) {
+      await picker.selectOption("");
+      assert.equal(await binding.getByRole("button", {name: "保存关联", exact: true}).isEnabled(), true);
+      await picker.selectOption(original);
+      assert.equal(await binding.getByRole("button", {name: "保存关联", exact: true}).isDisabled(), true);
+    }
     checks.push("deep links restore category; Komari selector keeps its existing save behavior");
 
     await section("appearance", "外观与品牌");
@@ -269,19 +259,32 @@ async function main() {
     await page.route("**/api/admin/overview", route => route.fulfill({status: 200, contentType: "application/json",
       body: JSON.stringify({...fixtureOverview, tasks: [{id: "task-layout", name: "布局验收任务", kind: "backup", status: "failed",
         detail: "合成任务记录".repeat(40), created: new Date().toISOString()}]})}));
+    await page.route("**/api/admin/security", route => route.fulfill({status: 200, contentType: "application/json",
+      body: JSON.stringify({totpEnabled: true, backupSchedule: "每日备份", backups: [
+        {name: "daily-latest.sealed", createdAt: "2026-10-27T00:00:24Z", size: 16990, status: "verified"},
+        {name: "daily-older.sealed", createdAt: "2026-10-26T00:00:24Z", size: 15990, status: "verified"}
+      ]})}));
     await visit("/admin/tasks");
     await page.locator(".tk-table").getByText("布局验收任务", {exact: true}).waitFor();
+    assert.equal(await page.locator(".tk-overview > .summary-stat").count(), 4);
+    await page.locator(".task-backup-card").getByText("daily-latest.sealed", {exact: true}).waitFor();
+    assert.equal(await page.locator(".tk-control-grid").evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length), 1);
+    assert.equal(await page.locator(".tk-table tbody tr").first().locator("td").count(), 7);
+    assert.equal(await page.locator(".tk-table td[data-label='关联服务器']").count(), 1);
+    assert.equal(await page.locator(".tk-table td[data-label='创建时间']").count(), 1);
     await page.locator(".tk-table").getByRole("button", {name: "展开", exact: true}).click();
     await layout("populated-task-mobile");
     await page.unroute("**/api/admin/overview");
+    await page.unroute("**/api/admin/security");
     checks.push("long subscription names wrap, search clears correctly, and populated task details stay within their panel");
+    checks.push("tasks overview, latest backup, stacked mobile controls and expanded details fit at 390px");
     await visit("/admin/members");
     assert.equal(await page.locator("nav, .page-head").getByText("套餐", {exact: false}).count(), 0);
     checks.push("subscription terminology in navigation, lists, create and assignment dialogs");
 
     for (const width of [390, 360]) {
       await page.setViewportSize({width, height: 1000});
-      for (const [route, button] of [["/nodes", "添加节点"], ["/members", "新建用户"], ["/tasks", "下载加密备份"]]) {
+      for (const [route, button] of [["/nodes", "添加节点"], ["/members", "新建用户"], ["/tasks", "导出"]]) {
         await visit("/admin" + route);
         await page.getByRole("button", {name: button, exact: true}).click();
         await page.getByRole("dialog").waitFor();

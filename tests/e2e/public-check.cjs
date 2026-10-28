@@ -1,10 +1,10 @@
 // Read-only public/admin acceptance; a disposable legacy session is supplied
 // through stdin, upgraded and revoked during the check. Never save cookies.
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
 (async()=>{
- const {session}=JSON.parse(fs.readFileSync(0,'utf8'));const base='${process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'}';let phase='public';
- const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+ const {session}=JSON.parse(fs.readFileSync(0,'utf8'));const base=(process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440');let phase='public';
+ const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
  try{
   const ctx=await browser.newContext({viewport:{width:1440,height:1080},reducedMotion:'reduce'});const page=await ctx.newPage();const errors=[];page.on('pageerror',()=>errors.push('pageerror'));
   await page.goto(base,{waitUntil:'networkidle'});await page.getByRole('heading',{name:'服务器状态',exact:true}).waitFor();

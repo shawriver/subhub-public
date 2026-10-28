@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require(process.env.SUBHUB_PLAYWRIGHT_MODULE || 'playwright');
 const assert=require('node:assert/strict');
 const {createHmac,randomUUID}=require('node:crypto');
 function otp(secret){
@@ -9,7 +9,7 @@ function otp(secret){
 (async()=>{
  const base=process.env.SUBHUB_BASE_URL||'http://127.0.0.1:18441',password=process.env.SUBHUB_TEST_PASSWORD,setup=process.env.SUBHUB_SETUP_TOKEN;
  assert.ok(password&&setup);
- const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+ const browser=await chromium.launch({headless:true,...(process.env.SUBHUB_CHROMIUM ? {executablePath:process.env.SUBHUB_CHROMIUM} : {})});
  const checks=[],errors=[];let page;
  try{
   page=await browser.newPage({viewport:{width:1440,height:1050}});page.on('pageerror',e=>errors.push(e.message));
