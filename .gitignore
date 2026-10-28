@@ -1,0 +1,20 @@
+node_modules/
+web/dist/
+dist/
+subhub.exe
+subhub.exe~
+subhub-linux-amd64
+subhub-check-linux
+subhub-check-linux.exe
+*.db
+*.db-*
+*.key
+.env*
+*.tar.gz
+test-results/
+
+# local build and test output
+/subhub
+/subhub-local.exe
+/seedlocal_test.go
+/uireview.cjs

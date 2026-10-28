@@ -1,0 +1,43 @@
+const {chromium}=require('C:/Users/15241/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const fs=require('fs');
+(async()=>{
+  const baseURL=process.env.SUBHUB_BASE_URL||'http://127.0.0.1:18440';
+  const browser=await chromium.launch({headless:true,executablePath:'C:/Users/15241/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe'});
+  const errors=[];
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+  page.on('pageerror',e=>errors.push(String(e)));
+  await page.goto(baseURL,{waitUntil:'networkidle'});
+  await page.waitForTimeout(1200);
+  fs.mkdirSync('docs/assets/subhub',{recursive:true});
+  await page.screenshot({path:'docs/assets/subhub/desktop-overview.png',fullPage:true});
+  const results={};
+  for(const [key,label] of [['servers','服务器'],['nodes','节点'],['members','用户'],['subscriptions','订阅'],['tasks','任务'],['settings','设置']]){
+    await page.locator('.sidebar nav button').filter({hasText:label}).first().click();
+    await page.waitForTimeout(250);
+    results[key]={heading:await page.locator('.page-heading h2').first().innerText().catch(()=>process.env.SUBHUB_TEST_BASE||'http://127.0.0.1:18440'),scrollWidth:await page.evaluate(()=>document.documentElement.scrollWidth),innerWidth:await page.evaluate(()=>innerWidth)};
+    await page.screenshot({path:`docs/assets/subhub/desktop-${key}.png`,fullPage:true});
+  }
+  await page.locator('.sidebar nav button').filter({hasText:'服务器'}).click();
+  await page.locator('tbody tr').first().click();
+  await page.waitForTimeout(150);
+  results.drawer=await page.locator('.drawer').isVisible();
+  await page.screenshot({path:'docs/assets/subhub/desktop-drawer.png'});
+  await page.locator('.drawer header .icon-button').click();
+  await page.getByRole('button',{name:'添加服务器'}).first().click();
+  results.modal=await page.locator('.modal').isVisible();
+  await page.screenshot({path:'docs/assets/subhub/desktop-modal.png'});
+  await page.locator('.modal header .icon-button').click();
+  const mobile=await browser.newPage({viewport:{width:390,height:844}});
+  const mobileErrors=[];mobile.on('pageerror',e=>mobileErrors.push(String(e)));
+  await mobile.goto(baseURL,{waitUntil:'networkidle'});
+  await mobile.waitForTimeout(500);
+  await mobile.screenshot({path:'docs/assets/subhub/mobile-overview.png',fullPage:true});
+  results.mobile={scrollWidth:await mobile.evaluate(()=>document.documentElement.scrollWidth),innerWidth:await mobile.evaluate(()=>innerWidth)};
+  await mobile.locator('.mobile-menu').click();
+  results.mobileMenu=await mobile.locator('.sidebar-open').isVisible();
+  results.errors=errors;results.mobileErrors=mobileErrors;
+  if(errors.length||mobileErrors.length||!results.drawer||!results.modal||!results.mobileMenu||Object.values(results).some(r=>r&&typeof r==='object'&&r.scrollWidth>r.innerWidth))process.exitCode=1;
+  console.log(JSON.stringify(results,null,2));
+  await browser.close();
+})();
