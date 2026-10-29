@@ -10,10 +10,15 @@ func TestRenderClashIncludesAutomaticAndFallbackGroups(t *testing.T) {
 		{Name: "Tokyo", Protocol: "VLESS", Host: "192.0.2.1", Port: 443, Credential: "secret", Transport: "tcp", Security: "none"},
 		{Name: "Singapore", Protocol: "Trojan", Host: "192.0.2.2", Port: 443, Credential: "secret", Transport: "tcp", Security: "tls"},
 	}, nil))
-	for _, expected := range []string{`"name":"自动选择"`, `"type":"url-test"`, `"name":"故障转移"`, `"type":"fallback"`, `"proxies":["自动选择","故障转移","Tokyo","Singapore"]`, `"MATCH,节点选择"`} {
+	for _, expected := range []string{`"name":"节点选择"`, `"type":"select"`, `"proxies":["Tokyo","Singapore","自动选择","故障转移"]`, `"name":"自动选择"`, `"type":"url-test"`, `"name":"故障转移"`, `"type":"fallback"`, `"MATCH,节点选择"`} {
 		if !strings.Contains(config, expected) {
 			t.Fatalf("generated config missing %s", expected)
 		}
+	}
+	manual := strings.Index(config, `"name":"节点选择"`)
+	automatic := strings.Index(config, `"name":"自动选择"`)
+	if manual < 0 || automatic < 0 || manual > automatic {
+		t.Fatal("manual selection group must be listed before automatic groups")
 	}
 	if strings.Count(config, "\nproxies:") != 1 {
 		t.Fatal("group generation introduced invalid YAML")

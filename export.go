@@ -208,12 +208,15 @@ func renderClashTemplate(nodes []Node, rules []string, smart bool) []byte {
 		names = append(names, n.Name)
 	}
 	automatic := []string{"自动选择", "故障转移"}
-	selectNames := append(append([]string{}, automatic...), names...)
+	// Clash select groups use the first proxy by default. Keep real nodes first
+	// so an imported subscription starts on a concrete node and remains
+	// manually selectable; automatic modes stay available at the end.
+	selectNames := append(append([]string{}, names...), automatic...)
 	b.WriteString("proxy-groups:\n")
 	for _, group := range []map[string]any{
+		{"name": "节点选择", "type": "select", "proxies": selectNames},
 		{"name": "自动选择", "type": "url-test", "proxies": names, "url": "https://www.gstatic.com/generate_204", "interval": 300, "tolerance": 50, "lazy": true},
 		{"name": "故障转移", "type": "fallback", "proxies": names, "url": "https://www.gstatic.com/generate_204", "interval": 300, "lazy": true},
-		{"name": "节点选择", "type": "select", "proxies": selectNames},
 	} {
 		fmt.Fprintf(&b, "  - %s\n", yamlValue(group))
 	}
